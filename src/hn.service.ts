@@ -16,7 +16,7 @@ export class HNService {
     return this.items;
   }
 
-  @Cron('0 */1 * * * *') // every 5 mins
+  @Cron('0 */5 * * * *') // every 5 mins
   async refreshNews() {
     const storyIds = await fetch(
       `${this.HACKER_NEWS_API}/topstories.json?limitToFirst=30&orderBy="$priority"`,
@@ -41,31 +41,31 @@ export class HNService {
   }
 
   async loadOG(object) {
-    if (object.hasOwnProperty('url')) {
-      const html = await fetch(object['url'])
-        .then((response) => response.text())
-        .catch(() => {
-          console.error(`Failed fetching ${object['url']}`);
-          return null;
-        });
-      if (!html) {
-        return object;
-      }
-      const dom = parse(html);
-      const og = {};
-      dom.querySelectorAll("meta[property^='og:']").forEach((meta) => {
-        og[meta.getAttribute('property')] = meta.getAttribute('content');
-      });
-      object['og'] = og;
+    if (!object.hasOwnProperty('url')) {
+      return object;
     }
-    console.log(JSON.stringify(object));
+    const html = await fetch(object['url'])
+      .then((response) => response.text())
+      .catch(() => {
+        console.error(`Failed fetching ${object['url']}`);
+        return null;
+      });
+    if (!html) {
+      return object;
+    }
+    const dom = parse(html);
+    const og = {};
+    dom.querySelectorAll("meta[property^='og:']").forEach((meta) => {
+      og[meta.getAttribute('property')] = meta.getAttribute('content');
+    });
+    object['og'] = og;
     return object;
   }
 }
 
 type ItemType = 'story' | 'comment' | 'job' | 'poll' | 'pollopt';
 
-class NewsItem {
+export class NewsItem {
   id: number;
   score: number;
   title: string;

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hacker News</title>
+    <style>
+      .news {
+        max-width: 1200px;
+        margin: auto;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1em;
+      }
+      news-item {
+        display: block;
+      }
+      news-item:nth-of-type(1) {
+        grid-column-end: span 2;
+      }
+      news-item:nth-of-type(1).large {
+        grid-column-end: span 3;
+      }
+
+      news-item img {
+        width: 100%;
+        max-height: 10em;
+        object-fit: cover;
+      }
+    </style>
+  </head>
+  <body>
+    <template id="newsItem">
+      <slot name="img"></slot>
+      <slot name="title"></slot>
+      <slot name="description"></slot>
+    </template>
+    <h1>Hacker News</h1>
+    <div class="news"></div>
+    <script>
+      'use strict;';
+      HACKER_NEWS_ITEM = 'https://news.ycombinator.com/item?id=';
+      document.addEventListener('DOMContentLoaded', async () => {
+        const newsItems = await fetch('/hn').then((response) =>
+          response.json(),
+        );
+        document.querySelector('div.news').innerHTML = await newsItems
+          .map((newsItem) => {
+            const ogImageUrl = newsItem.og ? newsItem.og['og:image'] : null;
+            const hnTitle = newsItem.title;
+            const url = newsItem.url || HACKER_NEWS_ITEM + newsItem.id;
+            const ogDescription = newsItem.og
+              ? newsItem.og['og:description']
+              : null;
+
+            return `<news-item class="${
+              newsItem.score > 100
+                ? 'large'
+                : newsItem.score > 20
+                ? 'medium'
+                : 'low'
+            }">
+              ${ogImageUrl ? `<img slot="img" src="${ogImageUrl}"/> ` : ''}
+              <h2 slot="title"><a href="${url}">${hnTitle}</a></h2>
+              <span slot="description">${ogDescription || ''}
+                 ${newsItem.id}</span>
+              </news-item>`;
+          })
+          .join('');
+      });
+      customElements.define(
+        'news-item',
+        class extends HTMLElement {
+          constructor() {
+            super();
+            const newsItemTemplate = document.getElementById('newsItem');
+            const shadowRoot = this.attachShadow({ mode: 'closed' });
+            shadowRoot.appendChild(newsItemTemplate.content.cloneNode(true));
+          }
+        },
+      );
+    </script>
+  </body>
+</html>
